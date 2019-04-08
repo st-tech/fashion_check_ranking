@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja" dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" xmlns:og="http://ogp.me/ns#" xmlns:mixi="http://mixi-platform.com/ns#" xmlns:fb="http://ogp.me/ns/fb#">
+  <head>
+    <meta charset="UTF-8">
+    <title>FASHION CHECK RANKING</title>
+    <link type="text/css" rel="stylesheet" href="./css/style.css" media="screen">
+    <link rel="shortcut icon" href="favicon.ico">
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <div class="logo">
+          <img src="images/logo.svg">
+        </div>
+        <h1>FASHION CHECK RANKING</h1>
+      </header>
+      <div class="contents">
+        <ul class="ranking">
+          <% @tweets.each.with_index(1) do |tweet, i| %>
+            <li id="ranking<%= i %>" class="ranking-list">
+              <div class="ranking-body">
+                <div class="ranking-num">
+                  <%= i %>
+                </div>
+                <div class="ranking-fav">
+                  <%= tweet.score %><span>FAV</span>
+                </div>
+                <div class="ranking-user">
+                  <a href="<%= tweet.tweet_url %>">
+                    <div class="ranking-user-img">
+                      <img src="<%= tweet.image_url %>" alt="<%= tweet.account_id %>">
+                    </div>
+                    <div class="ranking-user-name">
+                      @<%= tweet.account_id %>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+      <footer>
+        © ZOZO Technologies, Inc.
+      </footer>
+    </div>
+  </body>
+</html>

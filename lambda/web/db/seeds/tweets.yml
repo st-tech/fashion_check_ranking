@@ -1,0 +1,42 @@
+tweet1:
+  account_id: '@hoge'
+  score: 100
+  tweet_url: 'hoge.example.com'
+  image_url: 'hoge.example.png'
+  delete_flag: false
+tweet2:
+  account_id: '@foo'
+  score: 10000
+  tweet_url: 'foo.example.com'
+  image_url: 'foo.example.png'
+  delete_flag: false
+tweet3:
+  account_id: '@bar'
+  score: 200
+  tweet_url: 'bar.example.com'
+  image_url: 'bar.example.png'
+  delete_flag: false
+tweet4:
+  account_id: '@hogehoge'
+  score: 2000
+  tweet_url: 'hogehoge.example.com'
+  image_url: 'hogehoge.example.png'
+  delete_flag: false
+tweet5:
+  account_id: '@foobar'
+  score: 500
+  tweet_url: 'foobar.example.com'
+  image_url: 'foobar.example.png'
+  delete_flag: false
+tweet6:
+  account_id: '@abc_abc_abc'
+  score: 1000
+  tweet_url: 'foobar.example.com'
+  image_url: 'foobar.example.png'
+  delete_flag: true
+tweet7:
+  account_id: '@abcdefg'
+  score: 400
+  tweet_url: 'foobar.example.com'
+  image_url: 'foobar.example.png'
+  delete_flag: true

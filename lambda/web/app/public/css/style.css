@@ -1,0 +1,169 @@
+@charset "UTF-8";
+@font-face {
+font-family: "zozobold";
+  src: url(../font/ZOZOGothic_005-Bold.woff) format("woff");
+}
+
+*, :after, :before {box-sizing: border-box;}
+html,body,div,h1,h2,h3,h4,h5,h6,p,blockquote,q,pre,table,caption,colgroup,col,tbody,thead,tfoot,tr,th,td,ul,ol,li,dl,dt,dd,form,fieldset,legend,label,span,a,img,em,ins,del,cite,abbr,sup,sub,dfn,code,var,samp,kbd,object,script,noscript,style,iframe,embed,param,map,area,menu,hr,address,small,strong,i,b,article,aside,figure,footer,header,hgroup,nav,section,figcaption,time,video,audio,mark,ruby,rt,rp,bdo,source,canvas,details,summary,command,datalist,keygen,output,progress,meter { margin: 0; padding: 0; font-size: 100%; }
+address,article,aside,figure,figcaption,footer,header,hgroup,hr,legend,menu,nav,section,summary { display: block; }
+li { list-style-type: none; }
+a img { border: none; }
+img { vertical-align: bottom; }
+object,object:focus { outline:none; }
+
+.hidden { display: none; }
+.half { -ms-filter: "alpha(opacity=50)"; filter: alpha( opacity=50 ); opacity: 0.5; }
+.clearfix { zoom: 1; }
+.clearfix:after { content: ""; display: block; clear: both; }
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+html {
+  font-size: 62.5%;
+}
+
+body {
+  position: relative;
+  font-family: 'zozobold', sans-serif;
+  background: #656565;
+}
+
+a,a:hover {
+  color: #000;
+  text-decoration: none;
+}
+
+#ranking1 a,
+#ranking2 a,
+#ranking3 a {
+  color: #fff;
+}
+
+a:hover {
+  opacity: .8;
+}
+
+header {
+  padding: 5rem 0 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  width: 8rem;
+}
+
+h1 {
+  margin-left: 1.6rem;
+  font-size: 5rem;
+  color: #fff;
+  text-align: center;
+}
+
+.contents {
+  margin: 0 20%;
+  background: #fff;
+  border: 1rem #000 solid;
+}
+
+.ranking-list {
+  border-bottom: 1rem #000 solid;
+}
+
+.ranking-list:last-child {
+  border-bottom: none;
+}
+
+.ranking-body {
+  display: flex;
+  align-items: center;
+  padding: 1rem 3rem;
+  background: #f0f0f0;
+}
+
+.ranking-num {
+  width: 10rem;
+  text-align: center;
+  font-size: 5rem;
+}
+
+#ranking1 .ranking-num,
+#ranking2 .ranking-num,
+#ranking3 .ranking-num {
+  background: url(../images/ranking.svg) center center no-repeat;
+  background-size: 9rem;
+}
+
+#ranking1 .ranking-body,
+#ranking2 .ranking-body,
+#ranking3 .ranking-body {
+  color: #fff;
+}
+
+#ranking1 .ranking-body {
+  background: #c0141b;
+}
+
+#ranking2 .ranking-body {
+  background: #112f6f;
+}
+
+#ranking3 .ranking-body {
+  background: #f4a118;
+}
+
+.ranking-fav {
+  margin-left: 3rem;
+  font-size: 4rem;
+}
+
+.ranking-fav span {
+  margin-left: 0.4rem;
+  font-size: 1.4rem;
+  font-weight: bold;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", YuGothic, "ヒラギノ角ゴ ProN W3", Hiragino Kaku Gothic ProN, sans-serif;
+}
+
+.ranking-user,
+.ranking-user a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", YuGothic, "ヒラギノ角ゴ ProN W3", Hiragino Kaku Gothic ProN, sans-serif;
+  overflow: hidden;
+}
+
+.ranking-user-img img {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+}
+
+.ranking-user-name {
+  width: 12rem;
+  margin-left: 1rem;
+  font-size: 1.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+footer {
+  text-align: left;
+  position: fixed;
+  right: -6rem;
+  bottom: 9rem;
+  font-size: 1.4rem;
+  color: #fff;
+  opacity: .3;
+  transform: rotate(-90deg);
+}
