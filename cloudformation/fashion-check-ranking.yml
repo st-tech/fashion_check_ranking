@@ -8,9 +8,33 @@ Parameters:
   GlobalEnvironment:
     Type: String
     Default: 'production'
-  # LambdaSourceS3KeyCrawler:
-  #   Type: String
-  #   Default: 'lambda/crawler.zip'
+  VPCCidrBlock:
+    Type: String
+    Default: '10.5.0.0/16'
+  AZ1:
+    Type: 'AWS::EC2::AvailabilityZone::Name'
+    Default: 'ap-northeast-1b'
+  AZ2:
+    Type: 'AWS::EC2::AvailabilityZone::Name'
+    Default: 'ap-northeast-1c'
+  ApplicationPublicCidrBlockAZ1:
+    Type: 'String'
+    Default: '10.5.0.0/24'
+  ApplicationPublicCidrBlockAZ2:
+    Type: 'String'
+    Default: '10.5.1.0/24'
+  ElasticLoadBalancingV2TargetGroupExternalArn:
+    Type: 'String'
+    Default: 'arn:aws:elasticloadbalancing:ap-northeast-1:{accountid}:targetgroup/{resourcetype}/{resource}'
+  ElasticLoadBalancingV2TargetGroupExternalCrawlerArn:
+    Type: 'String'
+    Default: 'arn:aws:elasticloadbalancing:ap-northeast-1:{accountid}:targetgroup/{resourcetype}/{resource}'
+  LambdaSourceS3KeyWeb:
+    Type: 'String'
+    Default: 'lambda/web.zip'
+  LambdaSourceS3KeyCrawler:
+    Type: String
+    Default: 'lambda/crawler.zip'
 
 Resources:
   S3Bucket:
@@ -18,7 +42,7 @@ Resources:
     DeletionPolicy: 'Retain'
     Properties:
       AccessControl: 'Private'
-      BucketName: !Sub ${AWS::StackName}
+      BucketName: !Sub ${AWS::StackName}-${GlobalEnvironment}
       Tags:
         - Key: 'Scope'
           Value: !Ref GlobalEnvironment
@@ -27,7 +51,7 @@ Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: FashionCheckLankingRole
+      RoleName: FashionCheckRankingRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -48,41 +72,346 @@ Resources:
             - logs:CreateLogStream
             - logs:PutLogEvents
             Resource: '*'
-  # ScheduledRule:
-  #   Type: AWS::Events::Rule
-  #   Properties:
-  #     Description: ScheduledRule
-  #     ScheduleExpression: 'cron(0/2 * * * ? *)'
-  #     State: ENABLED
-  #     Targets:
-  #     - Arn: !GetAtt LambdaFunctionCrawler.Arn
-  #       Id: TargetFunctionV1
-  # PermissionForEventsToInvokeLambda:
-  #   Type: AWS::Lambda::Permission
-  #   Properties:
-  #     FunctionName: !Ref LambdaFunctionCrawler
-  #     Action: lambda:InvokeFunction
-  #     Principal: events.amazonaws.com
-  #     SourceArn: !GetAtt 'ScheduledRule.Arn'
-  # LambdaFunctionCrawler:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     Code:
-  #       S3Bucket: !Ref S3Bucket
-  #       S3Key: !Ref LambdaSourceS3KeyCrawler
-  #     Handler: crawler.handler
-  #     Role: !GetAtt LambdaExecutionRole.Arn
-  #     Runtime: ruby2.5
-  #     MemorySize: 128
-  #     Timeout: 30
-  #     Environment:
-  #       Variables:
-  #         'prefix': !Ref GlobalPrefix
-  #         'environment': !Ref GlobalEnvironment
-  #     Tags:
-  #     - Key: Name
-  #       Value: !Ref GlobalPrefix
-  #     - Key: Environment
-  #       Value: !Ref GlobalEnvironment
-  #     - Key: CloudformationArn
-  #       Value: !Ref 'AWS::StackId'
+          - Effect: Allow
+            Action:
+              - 'dynamodb:*'
+            Resource:
+              - !Sub ${DynamoDBTable.Arn}
+  DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: 'AccountId'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'AccountId'
+          KeyType: 'HASH'
+      ProvisionedThroughput:
+        ReadCapacityUnits: 3
+        WriteCapacityUnits: 3
+      TableName: Tweets
+  EC2VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref VPCCidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: 'default'
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+  EC2InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-internet-gateway
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+  EC2VPCGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref EC2InternetGateway
+      VpcId: !Ref EC2VPC
+  EC2DHCPOptions:
+    Type: 'AWS::EC2::DHCPOptions'
+    Properties:
+      DomainName: !Sub '${GlobalEnvironment}.${GlobalPrefix}.internal ${AWS::Region}.compute.internal'
+      DomainNameServers:
+        - 'AmazonProvidedDNS'
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-dhcp-options
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+  EC2VPCDHCPOptionsAssociation:
+    Type: 'AWS::EC2::VPCDHCPOptionsAssociation'
+    Properties:
+      DhcpOptionsId: !Ref EC2DHCPOptions
+      VpcId: !Ref EC2VPC
+
+  EC2SubnetApplicationPublicAZ1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Ref AZ1
+      CidrBlock: !Ref ApplicationPublicCidrBlockAZ1
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${GlobalPrefix}_${GlobalEnvironment}_public_az1
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+      VpcId: !Ref EC2VPC
+  EC2RouteTablePublicAZ1:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${GlobalPrefix}_${GlobalEnvironment}_route_table_public_az1
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+  EC2SubnetRouteTableAssociationPublicAZ1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref EC2RouteTablePublicAZ1
+      SubnetId: !Ref EC2SubnetApplicationPublicAZ1
+  EC2RoutePublicAZ1InternetGateway:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref EC2InternetGateway
+      RouteTableId: !Ref EC2RouteTablePublicAZ1
+
+  EC2SubnetApplicationPublicAZ2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Ref AZ2
+      CidrBlock: !Ref ApplicationPublicCidrBlockAZ2
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${GlobalPrefix}_${GlobalEnvironment}_public_az2
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+      VpcId: !Ref EC2VPC
+  EC2RouteTablePublicAZ2:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${GlobalPrefix}_${GlobalEnvironment}_route_table_public_az2
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+  EC2SubnetRouteTableAssociationPublicAZ2:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref EC2RouteTablePublicAZ2
+      SubnetId: !Ref EC2SubnetApplicationPublicAZ2
+  EC2RoutePublicAZ2InternetGateway:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref EC2InternetGateway
+      RouteTableId: !Ref EC2RouteTablePublicAZ2
+
+  EC2SecurityGroupALBExternal:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: !Sub ${AWS::StackName}-alb-external
+      SecurityGroupIngress:
+        - CidrIp: '0.0.0.0/0'
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: 'tcp'
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-alb-external
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+      VpcId: !Ref EC2VPC
+
+  ElasticLoadBalancingV2LoadBalancerExternal:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Name: !Sub external-${GlobalPrefix}
+      Scheme: 'internet-facing'
+      SecurityGroups:
+        - !Ref EC2SecurityGroupALBExternal
+      Subnets:
+        - !Ref EC2SubnetApplicationPublicAZ1
+        - !Ref EC2SubnetApplicationPublicAZ2
+      Tags:
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+
+  # NOTE: CFnが対応していないため、TargetGroupは手動で作成
+
+  ElasticLoadBalancingV2ListenerExternalHTTPS:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroupExternalArn
+          Type: 'forward'
+      LoadBalancerArn: !Ref ElasticLoadBalancingV2LoadBalancerExternal
+      Port: 80
+      Protocol: 'HTTP'
+
+  S3BucketPublic:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: 'Retain'
+    Properties:
+      AccessControl: 'PublicRead'
+      BucketName: !Sub ${AWS::StackName}-${GlobalEnvironment}-public
+      Tags:
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+      VersioningConfiguration:
+        Status: 'Enabled'
+
+  S3BucketPolicyPublic:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3BucketPublic
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Resource: !Sub arn:aws:s3:::${S3BucketPublic}/*
+            Principal:
+              AWS: !Sub arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}
+
+  EC2SecurityGroupALBExternalCrawler:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: !Sub ${AWS::StackName}-alb-external
+      SecurityGroupIngress:
+        - CidrIp: !Sub '{{resolve:secretsmanager:${GlobalEnvironment}/FashionCheckRanking/IP:SecretString:office_aoyama}}'
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: 'tcp'
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-alb-external-crawler
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+      VpcId: !Ref EC2VPC
+
+  LambdaFunctionWeb:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: !Ref LambdaSourceS3KeyWeb
+      Handler: web.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: ruby2.5
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          'prefix': !Ref GlobalPrefix
+          'environment': !Ref GlobalEnvironment
+      Tags:
+      - Key: Name
+        Value: !Ref GlobalPrefix
+      - Key: Environment
+        Value: !Ref GlobalEnvironment
+      - Key: CloudformationArn
+        Value: !Ref 'AWS::StackId'
+
+  ElasticLoadBalancingV2LoadBalancerExternalCrawler:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Name: !Sub cron-${GlobalPrefix}-crawler
+      Scheme: 'internet-facing'
+      SecurityGroups:
+        - !Ref EC2SecurityGroupALBExternalCrawler
+      Subnets:
+        - !Ref EC2SubnetApplicationPublicAZ1
+        - !Ref EC2SubnetApplicationPublicAZ2
+      Tags:
+        - Key: 'Scope'
+          Value: !Ref GlobalEnvironment
+
+   # NOTE: CFnが対応していないため、TargetGroupは手動で作成
+
+  ElasticLoadBalancingV2ListenerExternalCrawlerHTTP:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroupExternalCrawlerArn
+          Type: 'forward'
+      LoadBalancerArn: !Ref ElasticLoadBalancingV2LoadBalancerExternalCrawler
+      Port: 80
+      Protocol: 'HTTP'
+
+  LambdaFunctionCrawler:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: !Ref LambdaSourceS3KeyCrawler
+      Handler: crawler.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: ruby2.5
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          'prefix': !Ref GlobalPrefix
+          'environment': !Ref GlobalEnvironment
+          'SEARCH_KEYWORD': '#rubykaigi #zozotech exclude:retweets'
+          'CONSUMER_KEY': !Sub '{{resolve:secretsmanager:${GlobalEnvironment}/FashionCheckRanking/Twitter:SecretString:consumer_key}}'
+          'CONSUMER_SECRET': !Sub '{{resolve:secretsmanager:${GlobalEnvironment}/FashionCheckRanking/Twitter:SecretString:consumer_secret}}'
+          'ACCESS_TOKEN': !Sub '{{resolve:secretsmanager:${GlobalEnvironment}/FashionCheckRanking/Twitter:SecretString:access_token}}'
+          'ACCESS_TOKEN_SECRET': !Sub '{{resolve:secretsmanager:${GlobalEnvironment}/FashionCheckRanking/Twitter:SecretString:access_token_secret}}'
+          'SENTRY_DSN': !Sub '{{resolve:secretsmanager:${GlobalEnvironment}/FashionCheckRanking/Sentry:SecretString:dns}}'
+      Tags:
+      - Key: Name
+        Value: !Ref GlobalPrefix
+      - Key: Environment
+        Value: !Ref GlobalEnvironment
+      - Key: CloudformationArn
+        Value: !Ref 'AWS::StackId'
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Ref AWS::StackName
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt S3BucketPublic.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}
+          - Id: CustomOrigin
+            DomainName: !GetAtt ElasticLoadBalancingV2LoadBalancerExternal.DNSName
+            CustomOriginConfig:
+              HTTPPort: '80'
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: CustomOrigin
+          ForwardedValues:
+            QueryString: true
+          ViewerProtocolPolicy: allow-all
+          MaxTTL: 0
+        CacheBehaviors:
+          - TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: false
+            ViewerProtocolPolicy: allow-all
+            MaxTTL: 0
+            PathPattern: favicon.ico
+          - TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: false
+            ViewerProtocolPolicy: allow-all
+            MaxTTL: 0
+            PathPattern: css/*
+          - TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: false
+            ViewerProtocolPolicy: allow-all
+            MaxTTL: 0
+            PathPattern: font/*
+          - TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: false
+            ViewerProtocolPolicy: allow-all
+            MaxTTL: 0
+            PathPattern: images/*
+      Tags:
+        - Key: Name
+          Value: !Ref GlobalPrefix
+        - Key: Environment
+          Value: !Ref GlobalEnvironment

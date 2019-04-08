@@ -25,7 +25,7 @@ $app ||= Rack::Builder.parse_file("#{__dir__}/app/config.ru").first
 
 def handler(event:, context:)
   # Check if the body is base64 encoded. If it is, try to decode it
-  body = 
+  body =
     if event['isBase64Encoded']
       Base64.decode64(event['body'])
     else
@@ -68,7 +68,7 @@ def handler(event:, context:)
     response = {
       'statusCode' => status,
       'headers' => headers,
-      'body' => body_content
+      'body' => body_content.force_encoding("UTF-8")
     }
     if event['requestContext'].key?('elb')
       # Required if we use Application Load Balancer instead of API Gateway
