@@ -15,30 +15,32 @@
         <h1>FASHION CHECK RANKING</h1>
       </header>
       <div class="contents">
-        <ul class="ranking">
-          <% @tweets.each.with_index(1) do |tweet, i| %>
-            <li id="ranking<%= i %>" class="ranking-list">
-              <div class="ranking-body">
-                <div class="ranking-num">
-                  <%= i %>
+        <% 2.times do |i| %>
+          <ul class="ranking">
+            <% @tweets[(15 * i)...(15 * (i + 1))].each.with_index(15 * i + 1) do |tweet, i| %>
+              <li id="ranking<%= i %>" class="ranking-list">
+                <div class="ranking-body">
+                  <div class="ranking-num">
+                    <%= i %>
+                  </div>
+                  <div class="ranking-fav">
+                    <%= tweet.score %><span>FAV</span>
+                  </div>
+                  <div class="ranking-user">
+                    <a href="<%= tweet.tweet_url %>">
+                      <div class="ranking-user-img">
+                        <img src="<%= tweet.image_url %>" alt="<%= tweet.account_id %>">
+                      </div>
+                      <div class="ranking-user-name">
+                        @<%= tweet.account_id %>
+                      </div>
+                    </a>
+                  </div>
                 </div>
-                <div class="ranking-fav">
-                  <%= tweet.score %><span>FAV</span>
-                </div>
-                <div class="ranking-user">
-                  <a href="<%= tweet.tweet_url %>">
-                    <div class="ranking-user-img">
-                      <img src="<%= tweet.image_url %>" alt="<%= tweet.account_id %>">
-                    </div>
-                    <div class="ranking-user-name">
-                      @<%= tweet.account_id %>
-                    </div>
-                  </a>
-                </div>
-              </div>
-            </li>
-          <% end %>
-        </ul>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
       </div>
       <footer>
         © ZOZO Technologies, Inc.

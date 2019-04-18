@@ -69,9 +69,19 @@ h1 {
 }
 
 .contents {
-  margin: 0 20%;
+  margin: 0 5%;
   background: #fff;
+  display: flex;
+  justify-content: center;
+}
+
+.ranking {
+  flex-grow: 1;
   border: 1rem #000 solid;
+}
+
+.ranking:first-child {
+  border-right: none;
 }
 
 .ranking-list {

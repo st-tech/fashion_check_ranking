@@ -9,7 +9,7 @@ class Tweet
     def ranking
       order_by_score_desc
         .reject { |t| t.delete_flag }
-        .take(15)
+        .take(30)
     end
 
     def all
