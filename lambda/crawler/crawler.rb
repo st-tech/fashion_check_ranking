@@ -24,6 +24,7 @@ class Crawler
   def save
     @fashion_check_tweets.each do |tweet|
       begin
+        next unless tweet.valid?
         @dynamodb.put_item(tweet.dynamo_params)
       rescue Aws::DynamoDB::Errors::ConditionalCheckFailedException
         puts "DynamoDB put_item failed. url: #{tweet.tweet_url}"
