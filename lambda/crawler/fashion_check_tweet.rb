@@ -33,7 +33,7 @@ class FashionCheckTweet
   private
 
   def parse
-    @account_id = @tweet.user.name
+    @account_id = @tweet.user.screen_name
     @tweet_url = @tweet.url.to_s
     @image_url = @tweet.user.profile_image_url.to_s
     score_text = @tweet.text.match(TWEET_TEMPLATE_JP) || @tweet.text.match(TWEET_TEMPLATE_EN)
