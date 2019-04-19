@@ -21,3 +21,6 @@ All of applications runs on AWS Lambda Ruby runtime.
 ## Copyright
 
 COPYRIGHT (c) ZOZO Technologies, Inc.
+
+## License
+MIT
