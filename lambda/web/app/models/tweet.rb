@@ -6,35 +6,24 @@ class Tweet
   TABLE_NAME = 'Tweets'.freeze
 
   class << self
+    def ranking
+      order_by_score_desc
+        .reject { |t| t.delete_flag }
+        .take(15)
+    end
+
     def all
       params = {
         table_name: TABLE_NAME,
         select: 'ALL_ATTRIBUTES',
       }
 
-      @scoped = db.scan(params)
-                  .map { |attrs| self.new(parse(attrs)) }
-      self
+      db.scan(params)
+        .map { |attrs| self.new(parse(attrs)) }
     end
 
     def order_by_score_desc
-      @scoped = scoped.sort_by { |t| t.score }.reverse!
-      self
-    end
-
-    def not_deleted
-      @scoped = scoped.reject { |t| t.delete_flag }
-      self
-    end
-
-    def limit(limit)
-      @scoped = scoped.take limit
-      self
-    end
-
-    def scoped
-      all unless @scoped
-      @scoped
+      all.sort_by { |t| t.score }.reverse!
     end
 
     def create_table
