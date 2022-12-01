@@ -14,18 +14,20 @@ GEM
     aws-sigv4 (1.1.0)
       aws-eventstream (~> 1.0, >= 1.0.2)
     jmespath (1.4.0)
-    mustermann (1.0.3)
-    rack (2.0.7)
+    mustermann (2.0.2)
+      ruby2_keywords (~> 0.0.1)
+    rack (2.2.4)
     rack-contrib (2.1.0)
       rack (~> 2.0)
-    rack-protection (2.0.5)
+    rack-protection (2.2.3)
       rack
-    sinatra (2.0.5)
-      mustermann (~> 1.0)
-      rack (~> 2.0)
-      rack-protection (= 2.0.5)
+    ruby2_keywords (0.0.5)
+    sinatra (2.2.3)
+      mustermann (~> 2.0)
+      rack (~> 2.2)
+      rack-protection (= 2.2.3)
       tilt (~> 2.0)
-    tilt (2.0.9)
+    tilt (2.0.11)
 
 PLATFORMS
   ruby
